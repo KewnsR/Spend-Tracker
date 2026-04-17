@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spend Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+    <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+    <main class="app">
+      <header class="hero">
+        <p class="eyebrow">Money habits</p>
+        <h1>Spend Tracker</h1>
+        <p class="subtitle">
+          Track what you bought and see totals by day, week, month, and year.
+        </p>
+        <p class="subtitle-link-wrap">
+          <a class="page-link" href="history.html">View Full Spend History</a>
+        </p>
+      </header>
+
+      <section class="card entry-card" aria-labelledby="add-expense-title">
+        <h2 id="add-expense-title">Add Expense</h2>
+        <form id="expense-form" class="expense-form">
+          <label>
+            Item
+            <input
+              id="item"
+              name="item"
+              type="text"
+              placeholder="Coffee, groceries, taxi..."
+              required
+            />
+          </label>
+
+          <label>
+            Category
+            <select id="category" name="category" required>
+              <option value="Food">Food</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Transport">Transport</option>
+              <option value="Bills">Bills</option>
+              <option value="Health">Health</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+
+          <label>
+            Amount
+            <input
+              id="amount"
+              name="amount"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              required
+            />
+          </label>
+
+          <label>
+            Quantity
+            <input
+              id="quantity"
+              name="quantity"
+              type="number"
+              min="1"
+              step="1"
+              value="1"
+              required
+            />
+          </label>
+
+          <label>
+            Date
+            <input id="date" name="date" type="date" required />
+          </label>
+
+          <button type="submit">Save expense</button>
+        </form>
+      </section>
+
+      <section class="card summary-card" aria-labelledby="summary-title">
+        <div class="summary-head">
+          <h2 id="summary-title">Summary</h2>
+          <button id="clear-all" class="ghost" type="button">Clear all</button>
+        </div>
+
+        <div
+          class="summary-grid"
+          id="summary-grid"
+          role="status"
+          aria-live="polite"
+        >
+          <button
+            type="button"
+            class="summary-tile is-active"
+            data-period="today"
+          >
+            <h3>Today</h3>
+            <p id="total-day">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="this-week">
+            <h3>This Week</h3>
+            <p id="total-week">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="this-month">
+            <h3>This Month</h3>
+            <p id="total-month">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="this-year">
+            <h3>This Year</h3>
+            <p id="total-year">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="yesterday">
+            <h3>Yesterday</h3>
+            <p id="total-yesterday">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="last-week">
+            <h3>Last Week</h3>
+            <p id="total-last-week">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="last-month">
+            <h3>Last Month</h3>
+            <p id="total-last-month">$0.00</p>
+          </button>
+          <button type="button" class="summary-tile" data-period="last-year">
+            <h3>Last Year</h3>
+            <p id="total-last-year">$0.00</p>
+          </button>
+          <button
+            type="button"
+            class="summary-tile grand-total"
+            data-period="all-time"
+          >
+            <h3>Total Spend</h3>
+            <p id="total-all">$0.00</p>
+          </button>
+        </div>
+      </section>
+
+      <section class="card list-card" aria-labelledby="history-title">
+        <div class="list-head">
+          <div>
+            <h2 id="history-title">Purchase History</h2>
+            <p id="history-context" class="history-context">Showing: Today</p>
+          </div>
+          <label class="filter-wrap">
+            <span>Filter</span>
+            <select id="filter-category">
+              <option value="All">All categories</option>
+              <option value="Food">Food</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Transport">Transport</option>
+              <option value="Bills">Bills</option>
+              <option value="Health">Health</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+        </div>
+
+        <ul id="expense-list" class="expense-list" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <template id="expense-item-template">
+      <li class="expense-item">
+        <div class="expense-main">
+          <p class="expense-title"></p>
+          <p class="expense-meta"></p>
+        </div>
+        <div class="expense-side">
+          <p class="expense-amount"></p>
+          <button class="delete-btn" type="button">Delete</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spend History</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="history.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+    <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+    <main class="app">
+      <header class="hero">
+        <p class="eyebrow">Breakdown</p>
+        <h1>Spend History</h1>
+        <p class="subtitle">
+          View your totals grouped by day, week, month, and year.
+        </p>
+        <p class="subtitle-link-wrap">
+          <a class="page-link" href="index.html">Back to Spend Tracker</a>
+        </p>
+      </header>
+
+      <section
+        class="card history-group-card"
+        aria-labelledby="daily-history-title"
+      >
+        <h2 id="daily-history-title">Daily Totals</h2>
+        <ul id="daily-total-list" class="history-list" aria-live="polite"></ul>
+      </section>
+
+      <section
+        class="card history-group-card"
+        aria-labelledby="weekly-history-title"
+      >
+        <h2 id="weekly-history-title">Weekly Totals</h2>
+        <ul id="weekly-total-list" class="history-list" aria-live="polite"></ul>
+      </section>
+
+      <section
+        class="card history-group-card"
+        aria-labelledby="monthly-history-title"
+      >
+        <h2 id="monthly-history-title">Monthly Totals</h2>
+        <ul
+          id="monthly-total-list"
+          class="history-list"
+          aria-live="polite"
+        ></ul>
+      </section>
+
+      <section
+        class="card history-group-card"
+        aria-labelledby="yearly-history-title"
+      >
+        <h2 id="yearly-history-title">Yearly Totals</h2>
+        <ul id="yearly-total-list" class="history-list" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <script src="history.js"></script>
+  </body>
+</html>
