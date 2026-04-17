@@ -25,11 +25,7 @@ body {
       rgba(37, 99, 235, 0.14),
       transparent 34%
     ),
-    radial-gradient(
-      circle at 80% 90%,
-      rgba(15, 23, 42, 0.08),
-      transparent 32%
-    ),
+    radial-gradient(circle at 80% 90%, rgba(15, 23, 42, 0.08), transparent 32%),
     var(--bg);
   position: relative;
   overflow-x: hidden;
@@ -252,7 +248,11 @@ button[type="submit"]:hover {
 
 .grand-total {
   grid-column: 1 / -1;
-  background: linear-gradient(130deg, rgba(37, 99, 235, 0.08), rgba(15, 23, 42, 0.05));
+  background: linear-gradient(
+    130deg,
+    rgba(37, 99, 235, 0.08),
+    rgba(15, 23, 42, 0.05)
+  );
 }
 
 .history-context {
