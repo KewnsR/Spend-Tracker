@@ -325,6 +325,62 @@ button[type="submit"]:hover {
   border-radius: 12px;
 }
 
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+}
+
+.confirm-modal[hidden] {
+  display: none;
+}
+
+.confirm-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.confirm-modal-card {
+  position: relative;
+  width: min(92vw, 420px);
+  background: var(--surface);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+  padding: 18px;
+  animation: riseIn 0.18s ease;
+}
+
+.confirm-modal-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.confirm-message {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm-ok {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @keyframes riseIn {
   from {
     opacity: 0;

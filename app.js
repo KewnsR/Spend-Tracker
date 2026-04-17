@@ -13,6 +13,11 @@ const expenseTemplate = document.getElementById("expense-item-template");
 const summaryTiles = Array.from(document.querySelectorAll(".summary-tile"));
 const dailyTotalList = document.getElementById("daily-total-list");
 const historyContext = document.getElementById("history-context");
+const confirmModal = document.getElementById("confirm-modal");
+const confirmMessage = document.getElementById("confirm-message");
+const confirmCancel = document.getElementById("confirm-cancel");
+const confirmOk = document.getElementById("confirm-ok");
+const modalBackdrop = document.querySelector("[data-close-modal='true']");
 
 const totalDay = document.getElementById("total-day");
 const totalWeek = document.getElementById("total-week");
@@ -83,15 +88,15 @@ filterCategory.addEventListener("change", () => {
 });
 
 clearAllButton.addEventListener("click", () => {
-  const confirmed = window.confirm("Delete all saved expenses?");
+  showConfirmModal("Delete all saved expenses?").then((confirmed) => {
+    if (!confirmed) {
+      return;
+    }
 
-  if (!confirmed) {
-    return;
-  }
-
-  expenses = [];
-  saveExpenses();
-  render();
+    expenses = [];
+    saveExpenses();
+    render();
+  });
 });
 
 for (const tile of summaryTiles) {
@@ -297,9 +302,50 @@ function isInPeriod(dateString, period, compareDate) {
 }
 
 function deleteExpense(id) {
-  expenses = expenses.filter((expense) => expense.id !== id);
-  saveExpenses();
-  render();
+  showConfirmModal("Delete this expense?").then((confirmed) => {
+    if (!confirmed) {
+      return;
+    }
+
+    expenses = expenses.filter((expense) => expense.id !== id);
+    saveExpenses();
+    render();
+  });
+}
+
+function showConfirmModal(message) {
+  return new Promise((resolve) => {
+    confirmMessage.textContent = message;
+    confirmModal.hidden = false;
+    confirmOk.focus();
+
+    const closeWith = (result) => {
+      cleanup();
+      confirmModal.hidden = true;
+      resolve(result);
+    };
+
+    const onOk = () => closeWith(true);
+    const onCancel = () => closeWith(false);
+    const onBackdrop = () => closeWith(false);
+    const onKeydown = (event) => {
+      if (event.key === "Escape") {
+        closeWith(false);
+      }
+    };
+
+    function cleanup() {
+      confirmOk.removeEventListener("click", onOk);
+      confirmCancel.removeEventListener("click", onCancel);
+      modalBackdrop.removeEventListener("click", onBackdrop);
+      window.removeEventListener("keydown", onKeydown);
+    }
+
+    confirmOk.addEventListener("click", onOk);
+    confirmCancel.addEventListener("click", onCancel);
+    modalBackdrop.addEventListener("click", onBackdrop);
+    window.addEventListener("keydown", onKeydown);
+  });
 }
 
 function sumAmount(entries) {
