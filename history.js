@@ -1,50 +1,54 @@
-const STORAGE_KEY = "spend-tracker-expenses-v1";
-
 const dailyList = document.getElementById("daily-total-list");
 const weeklyList = document.getElementById("weekly-total-list");
 const monthlyList = document.getElementById("monthly-total-list");
 const yearlyList = document.getElementById("yearly-total-list");
 
-const expenses = loadExpenses();
+initializeHistory();
 
-renderAllHistory();
-
-function loadExpenses() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
+async function initializeHistory() {
   try {
-    const parsed = JSON.parse(raw);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter((entry) => {
-        return (
-          entry &&
-          typeof entry.date === "string" &&
-          Number.isFinite(Number(entry.amount))
-        );
-      })
-      .map((entry) => ({
-        date: entry.date,
-        amount: Number(entry.amount),
-        quantity:
-          Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
-            ? Number(entry.quantity)
-            : 1,
-      }));
+    const expenses = await getExpenses();
+    renderAllHistory(expenses);
   } catch {
-    return [];
+    renderEmpty(dailyList, "Unable to load daily totals.");
+    renderEmpty(weeklyList, "Unable to load weekly totals.");
+    renderEmpty(monthlyList, "Unable to load monthly totals.");
+    renderEmpty(yearlyList, "Unable to load yearly totals.");
   }
 }
 
-function renderAllHistory() {
+async function getExpenses() {
+  const response = await fetch("/api/expenses");
+
+  if (!response.ok) {
+    throw new Error("Failed to load expenses.");
+  }
+
+  const data = await response.json();
+
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data
+    .filter((entry) => {
+      return (
+        entry &&
+        typeof entry.date === "string" &&
+        Number.isFinite(Number(entry.amount))
+      );
+    })
+    .map((entry) => ({
+      date: entry.date,
+      amount: Number(entry.amount),
+      quantity:
+        Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
+          ? Number(entry.quantity)
+          : 1,
+    }));
+}
+
+function renderAllHistory(expenses) {
   if (expenses.length === 0) {
     renderEmpty(dailyList, "No daily totals yet.");
     renderEmpty(weeklyList, "No weekly totals yet.");

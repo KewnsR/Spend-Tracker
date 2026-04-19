@@ -1,0 +1,16 @@
+{
+  "name": "spend-tracker",
+  "version": "1.0.0",
+  "description": "Spend tracker with PostgreSQL backend",
+  "main": "server.js",
+  "scripts": {
+    "db:init": "node scripts/init-db.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.3"
+  }
+}

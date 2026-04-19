@@ -1,5 +1,3 @@
-const STORAGE_KEY = "spend-tracker-expenses-v1";
-
 const form = document.getElementById("expense-form");
 const itemInput = document.getElementById("item");
 const categoryInput = document.getElementById("category");
@@ -41,13 +39,13 @@ const periodLabelMap = {
   "all-time": "All Time",
 };
 
-let expenses = loadExpenses();
+let expenses = [];
 let selectedPeriod = "today";
 
 setDefaultDate();
-render();
+initializeApp();
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const item = itemInput.value.trim();
@@ -67,17 +65,21 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  expenses.unshift({
-    id: crypto.randomUUID(),
-    item,
-    category,
-    amount,
-    quantity,
-    date,
-    createdAt: Date.now(),
-  });
+  try {
+    const created = await createExpense({
+      item,
+      category,
+      amount,
+      quantity,
+      date,
+    });
 
-  saveExpenses();
+    expenses.unshift(created);
+  } catch {
+    window.alert("Unable to save expense. Check the server and database.");
+    return;
+  }
+
   form.reset();
   setDefaultDate();
   render();
@@ -88,14 +90,18 @@ filterCategory.addEventListener("change", () => {
 });
 
 clearAllButton.addEventListener("click", () => {
-  showConfirmModal("Delete all saved expenses?").then((confirmed) => {
+  showConfirmModal("Delete all saved expenses?").then(async (confirmed) => {
     if (!confirmed) {
       return;
     }
 
-    expenses = [];
-    saveExpenses();
-    render();
+    try {
+      await deleteAllExpenses();
+      expenses = [];
+      render();
+    } catch {
+      window.alert("Unable to clear expenses. Check the server and database.");
+    }
   });
 });
 
@@ -107,46 +113,17 @@ for (const tile of summaryTiles) {
   });
 }
 
-function loadExpenses() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
+async function initializeApp() {
   try {
-    const parsed = JSON.parse(raw);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter((entry) => {
-        return (
-          entry &&
-          typeof entry.id === "string" &&
-          typeof entry.item === "string" &&
-          typeof entry.category === "string" &&
-          typeof entry.date === "string" &&
-          Number.isFinite(Number(entry.amount))
-        );
-      })
-      .map((entry) => ({
-        ...entry,
-        amount: Number(entry.amount),
-        quantity:
-          Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
-            ? Number(entry.quantity)
-            : 1,
-      }));
+    expenses = await getExpenses();
   } catch {
-    return [];
+    window.alert(
+      "Unable to load expenses from PostgreSQL. Start the API server and verify your DB settings.",
+    );
+    expenses = [];
   }
-}
 
-function saveExpenses() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  render();
 }
 
 function setDefaultDate() {
@@ -302,15 +279,95 @@ function isInPeriod(dateString, period, compareDate) {
 }
 
 function deleteExpense(id) {
-  showConfirmModal("Delete this expense?").then((confirmed) => {
+  showConfirmModal("Delete this expense?").then(async (confirmed) => {
     if (!confirmed) {
       return;
     }
 
-    expenses = expenses.filter((expense) => expense.id !== id);
-    saveExpenses();
-    render();
+    try {
+      await removeExpense(id);
+      expenses = expenses.filter((expense) => expense.id !== id);
+      render();
+    } catch {
+      window.alert("Unable to delete expense. Check the server and database.");
+    }
   });
+}
+
+async function getExpenses() {
+  const response = await fetch("/api/expenses");
+
+  if (!response.ok) {
+    throw new Error("Failed to load expenses.");
+  }
+
+  const data = await response.json();
+
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data
+    .filter((entry) => {
+      return (
+        entry &&
+        (typeof entry.id === "number" || typeof entry.id === "string") &&
+        typeof entry.item === "string" &&
+        typeof entry.category === "string" &&
+        typeof entry.date === "string" &&
+        Number.isFinite(Number(entry.amount))
+      );
+    })
+    .map((entry) => ({
+      ...entry,
+      amount: Number(entry.amount),
+      quantity:
+        Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
+          ? Number(entry.quantity)
+          : 1,
+    }));
+}
+
+async function createExpense(expense) {
+  const response = await fetch("/api/expenses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(expense),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create expense.");
+  }
+
+  const created = await response.json();
+
+  return {
+    ...created,
+    amount: Number(created.amount),
+    quantity: Number(created.quantity),
+  };
+}
+
+async function removeExpense(id) {
+  const response = await fetch(`/api/expenses/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete expense.");
+  }
+}
+
+async function deleteAllExpenses() {
+  const response = await fetch("/api/expenses", {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to clear expenses.");
+  }
 }
 
 function showConfirmModal(message) {
