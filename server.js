@@ -1,4 +1,5 @@
-require("dotenv").config();
+const { loadEnv } = require("./load-env");
+loadEnv();
 
 const express = require("express");
 const path = require("path");
@@ -13,22 +14,97 @@ app.use(express.static(__dirname));
 
 app.get("/api/health", async (_req, res) => {
   try {
-    await getPool().query("SELECT 1");
+    await getPool().get("SELECT 1 AS ok");
     res.json({ ok: true });
   } catch (_error) {
     res.status(500).json({ ok: false, message: "Database connection failed." });
   }
 });
 
-app.get("/api/expenses", async (_req, res) => {
+app.get("/api/wallet", async (_req, res) => {
   try {
-    const result = await getPool().query(
-      `SELECT id, item, category, amount, quantity, date::text AS date, created_at AS "createdAt"
-       FROM expenses
-       ORDER BY created_at DESC`,
+    const db = getPool();
+    const row = await db.get(
+      `SELECT bank, ewallet, cash, updated_at AS updatedAt
+       FROM wallet
+       WHERE id = 1`,
     );
 
-    res.json(result.rows);
+    if (!row) {
+      await db.run(
+        `INSERT INTO wallet (id, bank, ewallet, cash)
+         VALUES (1, 0, 0, 0)`,
+      );
+      return res.json({ bank: 0, ewallet: 0, cash: 0, updatedAt: null });
+    }
+
+    return res.json({
+      bank: Number(row.bank),
+      ewallet: Number(row.ewallet),
+      cash: Number(row.cash),
+      updatedAt: row.updatedAt,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to fetch wallet." });
+  }
+});
+
+app.put("/api/wallet", async (req, res) => {
+  const { bank, ewallet, cash } = req.body;
+
+  if (
+    !Number.isFinite(Number(bank)) ||
+    !Number.isFinite(Number(ewallet)) ||
+    !Number.isFinite(Number(cash)) ||
+    Number(bank) < 0 ||
+    Number(ewallet) < 0 ||
+    Number(cash) < 0
+  ) {
+    return res.status(400).json({ message: "Invalid request body." });
+  }
+
+  try {
+    const db = getPool();
+    await db.run(
+      `INSERT INTO wallet (id, bank, ewallet, cash, updated_at)
+       VALUES (1, ?, ?, ?, datetime('now'))
+       ON CONFLICT(id)
+       DO UPDATE SET
+         bank = excluded.bank,
+         ewallet = excluded.ewallet,
+         cash = excluded.cash,
+         updated_at = datetime('now')`,
+      [Number(bank), Number(ewallet), Number(cash)],
+    );
+
+    const row = await db.get(
+      `SELECT bank, ewallet, cash, updated_at AS updatedAt
+       FROM wallet
+       WHERE id = 1`,
+    );
+
+    return res.json({
+      bank: Number(row.bank),
+      ewallet: Number(row.ewallet),
+      cash: Number(row.cash),
+      updatedAt: row.updatedAt,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to update wallet." });
+  }
+});
+
+app.get("/api/expenses", async (_req, res) => {
+  try {
+    const rows = await getPool().all(
+      `SELECT id, item, category, amount, quantity, date, created_at AS createdAt
+       FROM expenses
+       ORDER BY datetime(created_at) DESC, id DESC`,
+    );
+
+    res.json(rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch expenses." });
@@ -53,14 +129,20 @@ app.post("/api/expenses", async (req, res) => {
   }
 
   try {
-    const result = await getPool().query(
+    const db = getPool();
+    const result = await db.run(
       `INSERT INTO expenses (item, category, amount, quantity, date)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, item, category, amount, quantity, date::text AS date, created_at AS "createdAt"`,
+       VALUES (?, ?, ?, ?, ?)`,
       [item.trim(), category.trim(), Number(amount), Number(quantity), date],
     );
+    const row = await db.get(
+      `SELECT id, item, category, amount, quantity, date, created_at AS createdAt
+       FROM expenses
+       WHERE id = ?`,
+      [result.lastID],
+    );
 
-    return res.status(201).json(result.rows[0]);
+    return res.status(201).json(row);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to save expense." });
@@ -71,9 +153,11 @@ app.delete("/api/expenses/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await getPool().query("DELETE FROM expenses WHERE id = $1", [id]);
+    const result = await getPool().run("DELETE FROM expenses WHERE id = ?", [
+      id,
+    ]);
 
-    if (result.rowCount === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ message: "Expense not found." });
     }
 
@@ -86,7 +170,9 @@ app.delete("/api/expenses/:id", async (req, res) => {
 
 app.delete("/api/expenses", async (_req, res) => {
   try {
-    await getPool().query("TRUNCATE TABLE expenses RESTART IDENTITY");
+    const db = getPool();
+    await db.run("DELETE FROM expenses");
+    await db.run("DELETE FROM sqlite_sequence WHERE name = ?", ["expenses"]);
     return res.status(204).send();
   } catch (error) {
     console.error(error);
@@ -119,9 +205,7 @@ function listenWithFallback(initialPort) {
         .on("error", async (error) => {
           if (error.code === "EADDRINUSE" && attempt < MAX_PORT_TRIES) {
             const nextPort = port + 1;
-            console.warn(
-              `Port ${port} is busy. Trying port ${nextPort}...`,
-            );
+            console.warn(`Port ${port} is busy. Trying port ${nextPort}...`);
             tryListen(nextPort, attempt + 1);
             return;
           }

@@ -1,4 +1,5 @@
-require("dotenv").config();
+const { loadEnv } = require("../load-env");
+loadEnv();
 
 const { initializeDatabase, closePool } = require("../db");
 

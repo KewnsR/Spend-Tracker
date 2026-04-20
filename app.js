@@ -1,9 +1,22 @@
 const form = document.getElementById("expense-form");
+const walletForm = document.getElementById("wallet-form");
 const itemInput = document.getElementById("item");
 const categoryInput = document.getElementById("category");
 const amountInput = document.getElementById("amount");
 const quantityInput = document.getElementById("quantity");
 const dateInput = document.getElementById("date");
+const walletBankInput = document.getElementById("wallet-bank");
+const walletEwalletInput = document.getElementById("wallet-ewallet");
+const walletCashInput = document.getElementById("wallet-cash");
+const walletBankDisplay = document.getElementById("wallet-bank-display");
+const walletEwalletDisplay = document.getElementById("wallet-ewallet-display");
+const walletCashDisplay = document.getElementById("wallet-cash-display");
+const walletTotalDisplay = document.getElementById("wallet-total-display");
+const walletCard = document.querySelector(".wallet-card");
+const walletPrivacyToggle = document.getElementById("wallet-privacy-toggle");
+const walletHiddenNote = document.getElementById("wallet-hidden-note");
+const heroWalletTotal = document.getElementById("hero-wallet-total");
+const heroSpendTotal = document.getElementById("hero-spend-total");
 const filterCategory = document.getElementById("filter-category");
 const clearAllButton = document.getElementById("clear-all");
 const expenseList = document.getElementById("expense-list");
@@ -27,6 +40,11 @@ const totalLastMonth = document.getElementById("total-last-month");
 const totalLastYear = document.getElementById("total-last-year");
 const totalAll = document.getElementById("total-all");
 
+const STORAGE_KEY = "spend-tracker-expenses";
+const WALLET_STORAGE_KEY = "spend-tracker-wallet";
+const WALLET_PRIVACY_KEY = "spend-tracker-wallet-private";
+const useApi = window.location.port === "3000";
+
 const periodLabelMap = {
   today: "Today",
   "this-week": "This Week",
@@ -40,6 +58,12 @@ const periodLabelMap = {
 };
 
 let expenses = [];
+let wallet = {
+  bank: 0,
+  ewallet: 0,
+  cash: 0,
+};
+let isWalletPrivate = false;
 let selectedPeriod = "today";
 
 setDefaultDate();
@@ -85,6 +109,40 @@ form.addEventListener("submit", async (event) => {
   render();
 });
 
+walletForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const bank = Number.parseFloat(walletBankInput.value);
+  const ewallet = Number.parseFloat(walletEwalletInput.value);
+  const cash = Number.parseFloat(walletCashInput.value);
+
+  if (
+    Number.isNaN(bank) ||
+    Number.isNaN(ewallet) ||
+    Number.isNaN(cash) ||
+    bank < 0 ||
+    ewallet < 0 ||
+    cash < 0
+  ) {
+    return;
+  }
+
+  try {
+    wallet = await saveWallet({ bank, ewallet, cash });
+    renderWallet();
+  } catch {
+    window.alert("Unable to save wallet. Check the server and database.");
+  }
+});
+
+if (walletPrivacyToggle) {
+  walletPrivacyToggle.addEventListener("click", () => {
+    isWalletPrivate = !isWalletPrivate;
+    writeWalletPrivacy(isWalletPrivate);
+    applyWalletPrivacy();
+  });
+}
+
 filterCategory.addEventListener("change", () => {
   renderList();
 });
@@ -114,13 +172,19 @@ for (const tile of summaryTiles) {
 }
 
 async function initializeApp() {
+  isWalletPrivate = readWalletPrivacy();
+
   try {
-    expenses = await getExpenses();
+    const [loadedExpenses, loadedWallet] = await Promise.all([
+      getExpenses(),
+      getWallet(),
+    ]);
+    expenses = loadedExpenses;
+    wallet = loadedWallet;
   } catch {
-    window.alert(
-      "Unable to load expenses from PostgreSQL. Start the API server and verify your DB settings.",
-    );
+    window.alert("Unable to load expenses and wallet.");
     expenses = [];
+    wallet = { bank: 0, ewallet: 0, cash: 0 };
   }
 
   render();
@@ -131,10 +195,56 @@ function setDefaultDate() {
 }
 
 function render() {
+  renderWallet();
+  applyWalletPrivacy();
   renderSummary();
+  renderHeroMetrics();
   renderDailyTotals();
   updateActiveSummaryTile();
   renderList();
+}
+
+function renderHeroMetrics() {
+  if (!heroWalletTotal || !heroSpendTotal) {
+    return;
+  }
+
+  heroWalletTotal.textContent = money(
+    wallet.bank + wallet.ewallet + wallet.cash,
+  );
+  heroSpendTotal.textContent = money(sumAmount(expenses));
+}
+
+function renderWallet() {
+  walletBankDisplay.textContent = money(wallet.bank);
+  walletEwalletDisplay.textContent = money(wallet.ewallet);
+  walletCashDisplay.textContent = money(wallet.cash);
+  walletTotalDisplay.textContent = money(
+    wallet.bank + wallet.ewallet + wallet.cash,
+  );
+
+  walletBankInput.value = Number(wallet.bank).toFixed(2);
+  walletEwalletInput.value = Number(wallet.ewallet).toFixed(2);
+  walletCashInput.value = Number(wallet.cash).toFixed(2);
+}
+
+function applyWalletPrivacy() {
+  if (!walletCard || !walletPrivacyToggle) {
+    return;
+  }
+
+  walletCard.classList.toggle("is-private", isWalletPrivate);
+  walletPrivacyToggle.textContent = isWalletPrivate
+    ? "Show wallet"
+    : "Hide wallet";
+  walletPrivacyToggle.setAttribute(
+    "aria-pressed",
+    isWalletPrivate ? "true" : "false",
+  );
+
+  if (walletHiddenNote) {
+    walletHiddenNote.hidden = !isWalletPrivate;
+  }
 }
 
 function renderSummary() {
@@ -295,6 +405,10 @@ function deleteExpense(id) {
 }
 
 async function getExpenses() {
+  if (!useApi) {
+    return readExpensesFromStorage();
+  }
+
   const response = await fetch("/api/expenses");
 
   if (!response.ok) {
@@ -329,6 +443,23 @@ async function getExpenses() {
 }
 
 async function createExpense(expense) {
+  if (!useApi) {
+    const entries = readExpensesFromStorage();
+    const created = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      item: expense.item,
+      category: expense.category,
+      amount: Number(expense.amount),
+      quantity: Number(expense.quantity),
+      date: expense.date,
+      createdAt: Date.now(),
+    };
+
+    entries.unshift(created);
+    writeExpensesToStorage(entries);
+    return created;
+  }
+
   const response = await fetch("/api/expenses", {
     method: "POST",
     headers: {
@@ -350,7 +481,55 @@ async function createExpense(expense) {
   };
 }
 
+async function getWallet() {
+  if (!useApi) {
+    return readWalletFromStorage();
+  }
+
+  const response = await fetch("/api/wallet");
+
+  if (!response.ok) {
+    throw new Error("Failed to load wallet.");
+  }
+
+  const data = await response.json();
+
+  return normalizeWallet(data);
+}
+
+async function saveWallet(nextWallet) {
+  if (!useApi) {
+    const normalized = normalizeWallet(nextWallet);
+    writeWalletToStorage(normalized);
+    return normalized;
+  }
+
+  const response = await fetch("/api/wallet", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(nextWallet),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update wallet.");
+  }
+
+  const data = await response.json();
+
+  return normalizeWallet(data);
+}
+
 async function removeExpense(id) {
+  if (!useApi) {
+    const entries = readExpensesFromStorage().filter(
+      (entry) => String(entry.id) !== String(id),
+    );
+    writeExpensesToStorage(entries);
+    return;
+  }
+
   const response = await fetch(`/api/expenses/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
@@ -361,6 +540,11 @@ async function removeExpense(id) {
 }
 
 async function deleteAllExpenses() {
+  if (!useApi) {
+    writeExpensesToStorage([]);
+    return;
+  }
+
   const response = await fetch("/api/expenses", {
     method: "DELETE",
   });
@@ -521,4 +705,95 @@ function getStartOfWeek(date) {
   copy.setHours(0, 0, 0, 0);
 
   return copy;
+}
+
+function readExpensesFromStorage() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((entry) => {
+        return (
+          entry &&
+          (typeof entry.id === "number" || typeof entry.id === "string") &&
+          typeof entry.item === "string" &&
+          typeof entry.category === "string" &&
+          typeof entry.date === "string" &&
+          Number.isFinite(Number(entry.amount))
+        );
+      })
+      .map((entry) => ({
+        ...entry,
+        amount: Number(entry.amount),
+        quantity:
+          Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
+            ? Number(entry.quantity)
+            : 1,
+        createdAt: Number.isFinite(Number(entry.createdAt))
+          ? Number(entry.createdAt)
+          : 0,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function writeExpensesToStorage(entries) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function normalizeWallet(entry) {
+  const bank = Number(entry?.bank);
+  const ewallet = Number(entry?.ewallet);
+  const cash = Number(entry?.cash);
+
+  return {
+    bank: Number.isFinite(bank) && bank >= 0 ? bank : 0,
+    ewallet: Number.isFinite(ewallet) && ewallet >= 0 ? ewallet : 0,
+    cash: Number.isFinite(cash) && cash >= 0 ? cash : 0,
+  };
+}
+
+function readWalletFromStorage() {
+  try {
+    const raw = window.localStorage.getItem(WALLET_STORAGE_KEY);
+
+    if (!raw) {
+      return { bank: 0, ewallet: 0, cash: 0 };
+    }
+
+    return normalizeWallet(JSON.parse(raw));
+  } catch {
+    return { bank: 0, ewallet: 0, cash: 0 };
+  }
+}
+
+function writeWalletToStorage(entry) {
+  window.localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(entry));
+}
+
+function readWalletPrivacy() {
+  try {
+    return window.localStorage.getItem(WALLET_PRIVACY_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeWalletPrivacy(isPrivate) {
+  try {
+    window.localStorage.setItem(WALLET_PRIVACY_KEY, String(isPrivate));
+  } catch {
+    // Ignore storage errors and keep UI responsive.
+  }
 }

@@ -3,6 +3,9 @@ const weeklyList = document.getElementById("weekly-total-list");
 const monthlyList = document.getElementById("monthly-total-list");
 const yearlyList = document.getElementById("yearly-total-list");
 
+const STORAGE_KEY = "spend-tracker-expenses";
+const useApi = window.location.port === "3000";
+
 initializeHistory();
 
 async function initializeHistory() {
@@ -18,6 +21,10 @@ async function initializeHistory() {
 }
 
 async function getExpenses() {
+  if (!useApi) {
+    return readExpensesFromStorage();
+  }
+
   const response = await fetch("/api/expenses");
 
   if (!response.ok) {
@@ -46,6 +53,41 @@ async function getExpenses() {
           ? Number(entry.quantity)
           : 1,
     }));
+}
+
+function readExpensesFromStorage() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return [];
+    }
+
+    const data = JSON.parse(raw);
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data
+      .filter((entry) => {
+        return (
+          entry &&
+          typeof entry.date === "string" &&
+          Number.isFinite(Number(entry.amount))
+        );
+      })
+      .map((entry) => ({
+        date: entry.date,
+        amount: Number(entry.amount),
+        quantity:
+          Number.isFinite(Number(entry.quantity)) && Number(entry.quantity) >= 1
+            ? Number(entry.quantity)
+            : 1,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 function renderAllHistory(expenses) {

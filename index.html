@@ -26,9 +26,109 @@
         <p class="subtitle-link-wrap">
           <a class="page-link" href="history.html">View Full Spend History</a>
         </p>
+        <div class="hero-metrics" role="status" aria-live="polite">
+          <article class="hero-metric">
+            <h3>Wallet Total</h3>
+            <p id="hero-wallet-total">$0.00</p>
+          </article>
+          <article class="hero-metric">
+            <h3>Total Spend</h3>
+            <p id="hero-spend-total">$0.00</p>
+          </article>
+        </div>
       </header>
 
-      <section class="card entry-card" aria-labelledby="add-expense-title">
+      <section
+        id="wallet-section"
+        class="card wallet-card"
+        aria-labelledby="wallet-title"
+      >
+        <div class="wallet-head">
+          <h2 id="wallet-title">Wallet</h2>
+          <button
+            id="wallet-privacy-toggle"
+            class="ghost"
+            type="button"
+            aria-pressed="false"
+          >
+            Hide wallet
+          </button>
+        </div>
+        <p class="wallet-subtitle">
+          Track how much money you currently have in bank, ewallet, and cash.
+        </p>
+        <p id="wallet-hidden-note" class="wallet-hidden-note" hidden>
+          Wallet is hidden for privacy.
+        </p>
+
+        <form id="wallet-form" class="wallet-form">
+          <label>
+            Bank
+            <input
+              id="wallet-bank"
+              name="wallet-bank"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              required
+            />
+          </label>
+
+          <label>
+            Ewallet
+            <input
+              id="wallet-ewallet"
+              name="wallet-ewallet"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              required
+            />
+          </label>
+
+          <label>
+            Cash
+            <input
+              id="wallet-cash"
+              name="wallet-cash"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              required
+            />
+          </label>
+
+          <button class="wallet-save" type="submit">Save wallet</button>
+        </form>
+
+        <div class="wallet-grid" role="status" aria-live="polite">
+          <article class="wallet-tile">
+            <h3>Bank</h3>
+            <p id="wallet-bank-display">$0.00</p>
+          </article>
+          <article class="wallet-tile">
+            <h3>Ewallet</h3>
+            <p id="wallet-ewallet-display">$0.00</p>
+          </article>
+          <article class="wallet-tile">
+            <h3>Cash</h3>
+            <p id="wallet-cash-display">$0.00</p>
+          </article>
+          <article class="wallet-tile wallet-total">
+            <h3>Total Money</h3>
+            <p id="wallet-total-display">$0.00</p>
+          </article>
+        </div>
+      </section>
+
+      <section
+        id="add-expense-section"
+        class="card entry-card"
+        aria-labelledby="add-expense-title"
+      >
         <h2 id="add-expense-title">Add Expense</h2>
         <form id="expense-form" class="expense-form">
           <label>
@@ -90,7 +190,11 @@
         </form>
       </section>
 
-      <section class="card summary-card" aria-labelledby="summary-title">
+      <section
+        id="summary-section"
+        class="card summary-card"
+        aria-labelledby="summary-title"
+      >
         <div class="summary-head">
           <h2 id="summary-title">Summary</h2>
           <button id="clear-all" class="ghost" type="button">Clear all</button>
@@ -149,25 +253,34 @@
         </div>
       </section>
 
-      <section class="card list-card" aria-labelledby="history-title">
+      <section
+        id="history-section"
+        class="card list-card"
+        aria-labelledby="history-title"
+      >
         <div class="list-head">
           <div>
             <h2 id="history-title">Purchase History</h2>
             <p id="history-context" class="history-context">Showing: Today</p>
           </div>
-          <label class="filter-wrap">
-            <span>Filter</span>
-            <select id="filter-category">
-              <option value="All">All categories</option>
-              <option value="Food">Food</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Transport">Transport</option>
-              <option value="Bills">Bills</option>
-              <option value="Health">Health</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
+          <div class="list-actions">
+            <label class="filter-wrap">
+              <span>Filter</span>
+              <select id="filter-category">
+                <option value="All">All categories</option>
+                <option value="Food">Food</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Transport">Transport</option>
+                <option value="Bills">Bills</option>
+                <option value="Health">Health</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <a class="page-link section-link" href="history.html"
+              >Open History Page</a
+            >
+          </div>
         </div>
 
         <ul id="expense-list" class="expense-list" aria-live="polite"></ul>
