@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spend Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="calendar.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+    <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+    <main class="app">
+      <header class="hero">
+        <p class="eyebrow">Overview</p>
+        <h1>Spend Calendar</h1>
+        <p class="subtitle">
+          Calendar view with full summary: day, week, month, year, and all time.
+        </p>
+        <p class="subtitle-link-wrap">
+          <a class="page-link" href="index.html">Back to Spend Tracker</a>
+          <a class="page-link" href="history.html">Open History Page</a>
+        </p>
+      </header>
+
+      <section
+        class="card summary-card"
+        aria-labelledby="calendar-summary-title"
+      >
+        <h2 id="calendar-summary-title">Summary Totals</h2>
+        <div class="summary-grid" role="status" aria-live="polite">
+          <article class="summary-tile">
+            <h3>Selected Day</h3>
+            <p id="summary-day">$0.00</p>
+          </article>
+          <article class="summary-tile">
+            <h3>Selected Week</h3>
+            <p id="summary-week">$0.00</p>
+          </article>
+          <article class="summary-tile">
+            <h3>Selected Month</h3>
+            <p id="summary-month">$0.00</p>
+          </article>
+          <article class="summary-tile">
+            <h3>Selected Year</h3>
+            <p id="summary-year">$0.00</p>
+          </article>
+          <article class="summary-tile grand-total">
+            <h3>All Time</h3>
+            <p id="summary-all">$0.00</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card calendar-card" aria-labelledby="calendar-title">
+        <div class="calendar-head">
+          <h2 id="calendar-title">Monthly Calendar</h2>
+          <div class="calendar-controls">
+            <button id="prev-month" class="ghost" type="button">Prev</button>
+            <p id="calendar-month-label" class="month-label">Month Year</p>
+            <button id="next-month" class="ghost" type="button">Next</button>
+          </div>
+        </div>
+
+        <div class="weekday-row" aria-hidden="true">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+
+        <div
+          id="calendar-grid"
+          class="calendar-grid"
+          role="grid"
+          aria-live="polite"
+        ></div>
+      </section>
+
+      <section class="card detail-card" aria-labelledby="selected-date-title">
+        <h2 id="selected-date-title">Selected Date</h2>
+        <p id="selected-date-label" class="selected-date-label">
+          No date selected
+        </p>
+        <ul
+          id="selected-date-list"
+          class="history-list"
+          aria-live="polite"
+        ></ul>
+      </section>
+    </main>
+
+    <script src="calendar.js"></script>
+  </body>
+</html>
