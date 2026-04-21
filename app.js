@@ -797,3 +797,32 @@ function writeWalletPrivacy(isPrivate) {
     // Ignore storage errors and keep UI responsive.
   }
 }
+
+const walletSection = document.getElementById("wallet-section");
+const heroTotal = document.getElementById("hero-wallet-total");
+const heroMask = document.getElementById("hero-wallet-mask");
+const hiddenNote = document.getElementById("wallet-hidden-note");
+
+function toggleWalletPrivacy() {
+  const isPrivate = walletSection.classList.toggle("is-private");
+
+  // Sync all eye icons
+  document.querySelectorAll(".wallet-privacy-toggle").forEach((btn) => {
+    btn.querySelector(".icon-eye").style.display = isPrivate ? "none" : "block";
+    btn.querySelector(".icon-eye-off").style.display = isPrivate
+      ? "block"
+      : "none";
+  });
+
+  // Update hero metric
+  heroTotal.classList.toggle("is-hidden", isPrivate);
+  heroMask.classList.toggle("is-visible", isPrivate);
+
+  // Update wallet note
+  hiddenNote.classList.toggle("is-visible", isPrivate);
+}
+
+// Attach to both toggle buttons
+document.querySelectorAll(".wallet-privacy-toggle").forEach((btn) => {
+  btn.addEventListener("click", toggleWalletPrivacy);
+});
